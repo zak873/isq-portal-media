@@ -1,0 +1,84 @@
+name: Demo product images
+
+# Downloads the product images listed in products.json and hosts them as Release
+# assets under the tag "demo-products", so the client-portal DEMO can show real
+# catalog photos on its selection cards. GitHub runners can curl the open web
+# freely - that's the whole point of this job.
+#
+# Stable URL per product:
+#   https://github.com/<owner>/<repo>/releases/download/demo-products/<slug>.jpg
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "products.json"
+      - ".github/workflows/products.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-products
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick webp
+
+      - name: Download + normalise product images
+        run: |
+          set -u
+          mkdir -p out
+          FAILED=""
+          COUNT=0
+          while IFS=$'\t' read -r SLUG URL; do
+            [ -z "$SLUG" ] && continue
+            echo "::group::$SLUG"
+            echo "  $URL"
+            RAW="raw_$SLUG"
+            if curl -fsSL --max-time 60 --retry 3 --retry-delay 2 \
+                 -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36" \
+                 -e "https://www.google.com/" \
+                 -o "$RAW" "$URL"; then
+              if convert "$RAW" -auto-orient -background white -alpha remove -alpha off \
+                   -resize '900x900>' -quality 82 "out/$SLUG.jpg" 2>/dev/null; then
+                echo "  OK -> out/$SLUG.jpg ($(stat -c%s "out/$SLUG.jpg") bytes)"
+                COUNT=$((COUNT+1))
+              else
+                echo "  CONVERT FAILED"; FAILED="$FAILED $SLUG(convert)"
+              fi
+            else
+              echo "  DOWNLOAD FAILED"; FAILED="$FAILED $SLUG(download)"
+            fi
+            rm -f "$RAW"
+            echo "::endgroup::"
+          done < <(jq -r '.[] | [.slug, .url] | @tsv' products.json)
+
+          echo "----------------------------------------"
+          echo "converted: $COUNT"
+          if [ -n "$FAILED" ]; then
+            echo "::warning::failed:$FAILED"
+            echo "FAILED:$FAILED" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          ls -la out
+          [ "$COUNT" -gt 0 ]
+
+      - name: Publish to the demo-products release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh release view demo-products >/dev/null 2>&1 \
+            || gh release create demo-products \
+                 --title "Demo product images" \
+                 --notes "Product catalog images for the client-portal demo. Rebuilt from products.json."
+          gh release upload demo-products out/*.jpg --clobber
+          echo "### Uploaded" >> "$GITHUB_STEP_SUMMARY"
+          ls out | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
