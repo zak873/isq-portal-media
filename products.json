@@ -130,5 +130,29 @@
   {
     "slug": "paint2",
     "url": "https://media.benjaminmoore.com/WebServices/prod/dollops/500x500/HC-168.png"
+  },
+  {
+    "slug": "counter-alt-white",
+    "url": "https://www.caesarstone.ca/wp-content/uploads/sites/5/2020/12/1141_Pure-White_1141_Full_Slab_1920x890px.jpg"
+  },
+  {
+    "slug": "counter-alt-gold",
+    "url": "https://www.gramarstone.com/wp-content/uploads/2021/04/et.calacatta-gold-silestone-gramar.jpg"
+  },
+  {
+    "slug": "tile-alt-subway",
+    "url": "https://m.media-amazon.com/images/I/51IlnahkA4L._AC_UF894,1000_QL80_.jpg"
+  },
+  {
+    "slug": "tile-alt-largeformat",
+    "url": "https://m.media-amazon.com/images/I/61m8gyA9J6L.jpg"
+  },
+  {
+    "slug": "vanity-alt-white",
+    "url": "https://modernbathrooms.ca/cdn/shop/files/1136-floating-vanity-side_1080x.jpg"
+  },
+  {
+    "slug": "vanity-alt-black",
+    "url": "https://goldenelitedeco.com/cdn/shop/files/SizeDetail_f4ef5eec-9554-4f32-b254-872033542c71.jpg"
   }
 ]
