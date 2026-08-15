@@ -1,0 +1,34 @@
+name: Portal video posters + 1080p
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # ~4am Toronto (off-peak). Daily.
+  workflow_dispatch: {}    # lets you (or Claude) run it on demand too
+
+permissions:
+  contents: write          # create releases, upload assets, push state.json
+
+concurrency:
+  group: posters
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Process new videos
+        env:
+          MONDAY_TOKEN: ${{ secrets.MONDAY_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node process.mjs
+      - name: Commit state
+        run: |
+          git config user.name "poster-bot"
+          git config user.email "poster-bot@users.noreply.github.com"
+          git add state.json
+          git commit -m "update poster state [skip ci]" || echo "no changes"
+          git push
